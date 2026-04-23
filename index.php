@@ -357,6 +357,19 @@ function loadSubmissionValues(PDO $pdo, int $submissionId, array $emptyValues): 
     ]);
 }
 
+function loadSubmissionLogin(PDO $pdo, int $submissionId): ?string
+{
+    $statement = $pdo->prepare(
+        'SELECT login
+         FROM submission_accounts
+         WHERE submission_id = :submission_id'
+    );
+    $statement->execute([':submission_id' => $submissionId]);
+    $login = $statement->fetchColumn();
+
+    return $login === false ? null : (string) $login;
+}
+
 function getAuthSubmissionId(): ?int
 {
     if (!isset($_SESSION[AUTH_SESSION_KEY])) {
@@ -530,6 +543,7 @@ $dbError = pullSessionFlash(FLASH_DB_ERROR_SESSION_KEY);
 $generatedCredentials = pullSessionFlash(GENERATED_CREDENTIALS_SESSION_KEY);
 $authError = pullSessionFlash(AUTH_FLASH_ERROR_SESSION_KEY);
 $authForm = $_SESSION[AUTH_FORM_SESSION_KEY] ?? ['login' => ''];
+$authLogin = null;
 
 $values = $emptyValues;
 $authSubmissionId = getAuthSubmissionId();
@@ -547,6 +561,7 @@ if ($isAuthenticated) {
             $dbError = 'Сохранённая анкета не найдена. Выполните вход повторно.';
         } else {
             $values = $storedValues;
+            $authLogin = loadSubmissionLogin($pdo, $authSubmissionId);
         }
     } catch (Throwable $exception) {
         $dbError = 'Не удалось загрузить данные анкеты: ' . $exception->getMessage();
@@ -599,8 +614,8 @@ if (is_array($flashErrors)) {
                 <div class="status-box">
                     <span class="status-box__label">Статус</span>
                     <strong><?php echo $isAuthenticated ? 'Авторизован' : 'Гость'; ?></strong>
-                    <?php if ($isAuthenticated && $values['full_name'] !== ''): ?>
-                        <div class="status-box__name"><?php echo escape($values['full_name']); ?></div>
+                    <?php if ($isAuthenticated && $authLogin !== null && $authLogin !== ''): ?>
+                        <div class="status-box__name"><?php echo escape($authLogin); ?></div>
                     <?php endif; ?>
                     <?php if ($isAuthenticated): ?>
                         <form action="" method="post">
