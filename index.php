@@ -599,6 +599,9 @@ if (is_array($flashErrors)) {
                 <div class="status-box">
                     <span class="status-box__label">Статус</span>
                     <strong><?php echo $isAuthenticated ? 'Авторизован' : 'Гость'; ?></strong>
+                    <?php if ($isAuthenticated && $values['full_name'] !== ''): ?>
+                        <div class="status-box__name"><?php echo escape($values['full_name']); ?></div>
+                    <?php endif; ?>
                     <?php if ($isAuthenticated): ?>
                         <form action="" method="post">
                             <input type="hidden" name="action" value="logout">
