@@ -128,7 +128,7 @@ function escape(string $value): string
 
 function getPdo(): PDO
 {
-    return new PDO(
+    $pdo = new PDO(
         sprintf('mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4', DB_HOST, DB_PORT, DB_NAME),
         DB_USER,
         DB_PASSWORD,
@@ -138,6 +138,34 @@ function getPdo(): PDO
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         ]
     );
+
+    ensureApplicationSchema($pdo);
+
+    return $pdo;
+}
+
+function ensureApplicationSchema(PDO $pdo): void
+{
+    static $schemaChecked = false;
+
+    if ($schemaChecked) {
+        return;
+    }
+
+    $pdo->exec(
+        'CREATE TABLE IF NOT EXISTS submission_accounts (
+            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            submission_id INT UNSIGNED NOT NULL UNIQUE,
+            login VARCHAR(64) NOT NULL UNIQUE,
+            password_hash VARCHAR(255) NOT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT fk_submission_accounts_submission
+                FOREIGN KEY (submission_id) REFERENCES submissions(id)
+                ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+    );
+
+    $schemaChecked = true;
 }
 
 function normalizeFormValues(array $input): array
